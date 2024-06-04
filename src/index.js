@@ -87,11 +87,25 @@ class Project {
     }
 }
 
-class Projects {
+new class Projects {
     projects = [new Project("Default")];
+    constructor() {
+        PubSub.publish('All_Projects', this.projects);
+        PubSub.subscribe('Add_Project', (msg, data) => {
+            this.add();
+            PubSub.publish('Project_Added', this.projects);
+        })
+        PubSub.subscribe('Rename_Project', (msg, data) => {
+            this.renameProject(+data.id, data.newName);
+        });
+        PubSub.subscribe('Delete_Project', (msg, data) => {
+            this.delete(+data.id);
+            PubSub.publish('Project_Added', this.projects);
+        })
+    }
     defaultName() {
         let digit = this.projects.length;
-        return `Default${digit === 0 ? "" : ' ' + digit}`;
+        return `new project${digit === 0 ? "" : ''}`;
     }
     #getProject(id) {
         if (id >= 0 && id < this.projects.length)

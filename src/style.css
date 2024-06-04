@@ -1,0 +1,120 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 62.5%;
+}
+
+body {
+  line-height: 1;
+}
+
+.site-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.upper {
+  position: relative;
+  height: 15rem;
+  display: grid;
+  grid-template-columns: 15fr 85fr;
+}
+
+.lower {
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+}
+
+.brand-container,
+.nav-btn-container {
+  background-color: #373a40;
+}
+
+.nav-btn-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.brand-container div {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  align-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 7.2rem;
+}
+
+.nav-container {
+  background-color: #686d76;
+}
+.content-container {
+  background-color: #eeeeee;
+  display: flex;
+  justify-content: center;
+}
+
+.content {
+  margin-top: 5rem;
+  background-color: red;
+  width: 80%;
+  height: 50rem;
+}
+
+.menu-icon {
+  font-size: 4rem;
+}
+
+.static-nav-container,
+.dynamic-nav-container {
+  margin-top: 2rem;
+}
+
+.static-nav-container ul,
+.dynamic-nav-container ul {
+  margin-left: 3.5rem;
+  margin-right: 1rem;
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.nav-title {
+  font-size: 3.2rem;
+  margin-left: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-decoration: underline;
+}
+
+.nav-list {
+  font-size: 2.4rem;
+  display: flex;
+  align-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+}
+
+.nav-list:hover {
+  cursor: pointer;
+  background-color: #90949b;
+}
+
+.add-project-btn {
+  font-size: 1.8rem;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.add-project-btn:hover {
+  background-color: #90949b;
+}
