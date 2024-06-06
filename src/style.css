@@ -10,6 +10,7 @@ html {
 
 body {
   line-height: 1;
+  position: relative;
 }
 
 .site-container {
@@ -65,7 +66,7 @@ body {
 
 .content {
   margin-top: 5rem;
-  background-color: red;
+  /* background-color: red; */
   width: 80%;
   height: 50rem;
 }
@@ -117,4 +118,117 @@ body {
 
 .add-project-btn:hover {
   background-color: #90949b;
+}
+
+.task {
+  display: grid;
+  grid-template-columns: 3rem auto 3rem 10rem;
+  background-color: #90949b;
+  align-items: center;
+  padding: 1rem;
+}
+
+.task:hover {
+  cursor: pointer;
+}
+
+.task-title {
+  font-size: 1.8rem;
+}
+
+.task-date {
+  font-size: 1.6rem;
+}
+
+.task-expand-btn {
+  font-size: 2rem;
+  opacity: 0;
+}
+
+.task:hover .task-expand-btn {
+  opacity: 1;
+}
+
+.task-expand-btn:hover {
+  background-color: rgb(187, 187, 187);
+}
+
+.add-task-btn {
+  padding: 0.5rem;
+  padding-left: 2rem;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #777777;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.add-task-btn:hover {
+  background-color: #e4e4e4;
+}
+
+.modal {
+  max-width: 75rem;
+  background-color: blue;
+  display: grid;
+}
+
+dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.modal-body {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.7rem;
+  font-size: 2rem;
+  background-color: #afccff;
+}
+
+.modal-left {
+  background-color: white;
+  padding: 2rem;
+}
+
+.tasks-content {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tasks-content div {
+  display: flex;
+  gap: 1rem;
+}
+
+.modal-right {
+  background-color: rgb(180, 180, 180);
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.priorityDivs {
+  display: flex;
+  gap: 1rem;
+}
+
+.priorityDivs div {
+  padding: 0.7rem 1rem;
+  background-color: gold;
+}
+
+.priorityDivs .active {
+  scale: 1.2;
 }
