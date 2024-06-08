@@ -1,13 +1,15 @@
 import './style.css';
 
 import PubSub from 'pubsub-js'
-import { format } from "date-fns";
 
 
 new class GUI {
     constructor() {
         this.currentActiveProjectId = 0;
+        this.view = 'allTasks';
         this.currentActiveTask = null;
+        this.viewsTab = true;
+        this.projectChanged = false;
 
         this.modal = document.createElement('dialog');
         this.cacheStaticDOM();
@@ -15,8 +17,8 @@ new class GUI {
         PubSub.subscribe('Render_Projects', (msg, data) => {
             this.renderProjects(data);
         })
-        PubSub.subscribe('Render_Tasks', (msg, tasks) => {
-            this.renderTasks(tasks);
+        PubSub.subscribe('Render_Tasks', (msg, data) => {
+            this.renderTasks(data);
         })
         PubSub.subscribe('Display_Modal', (msg, data) => {
             this.projects = data.projects;
@@ -26,11 +28,6 @@ new class GUI {
         PubSub.subscribe("Render_All_Tasks", (msg, { tasks, projectId }) => {
             this.renderTasks({ tasks, projectId, multi: true });
         })
-        PubSub.subscribe('All_Tasks_Rendered', (msg, data) => {
-            this.appendAddTaskBtn();
-            this.cacheDynamicTaskDOM();
-            this.bindTaskEvent();
-        });
     }
 
     cacheStaticDOM() {
@@ -53,6 +50,7 @@ new class GUI {
         this.addTaskBtn = document.querySelector('.add-task-btn');
         this.tasks = document.querySelectorAll('.task');
         this.taskExpandBtns = document.querySelectorAll('.task-expand-btn');
+        this.taskIsDoneBtns = document.querySelectorAll('.task-is-done');
     }
     cacheModalDOM() {
         this.closeModalBtn = document.querySelector('.close-modal-btn')
@@ -69,7 +67,23 @@ new class GUI {
     bindStaticEvent() {
         this.allTasks.addEventListener('click', () => {
             this.content.innerHTML = '';
+            this.view = 'allTasks';
             PubSub.publish('All_Tasks', {});
+        })
+        this.todayTasks.addEventListener('click', () => {
+            this.content.innerHTML = '';
+            this.view = 'todayTasks';
+            PubSub.publish('Today_Tasks', {});
+        })
+        this.weekTasks.addEventListener('click', () => {
+            this.content.innerHTML = '';
+            this.view = 'weekTasks';
+            PubSub.publish('Week_Tasks', {});
+        })
+        this.highAlertTasks.addEventListener('click', () => {
+            this.content.innerHTML = '';
+            this.view = 'highAlertTasks'
+            PubSub.publish('High_Alert_Tasks', {});
         })
     }
 
@@ -90,25 +104,38 @@ new class GUI {
                 PubSub.publish('Open_Task', { taskId, projectId })
             })
         })
+        this.taskIsDoneBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const projectId = e.currentTarget.dataset.projectid;
+                const taskId = e.currentTarget.dataset.taskid;
+                PubSub.publish('Update_Task', { status: btn.checked, projectId, taskId, view: this.view });
+            })
+        })
     }
 
     bindModalEvent() {
         this.closeModalBtn.addEventListener('click', () => {
             const newId = this.projectOpt.value
-            const oldId = this.currentActiveProjectId;
-            PubSub.publish('Change_Task_Project', { newId, oldId, taskId: this.currentActiveTask });
+            const oldId = this.closeModalBtn.dataset.projectid;
+            if (this.projectChanged) {
+                PubSub.publish('Change_Task_Project', { newId, oldId, taskId: this.currentActiveTask, viewsTab: this.viewsTab });
+            }
+            this.projectChanged = false;
             this.modal.close();
         })
         this.deleteTaskBtn.addEventListener('click', this.deleteTask.bind(this));
         [this.taskisCompleted, this.taskName, this.taskDescription, this.taskDate].forEach(el => el.addEventListener('input', (e) => {
-            PubSub.publish('Update_Task', { name: this.taskName.value, status: this.taskisCompleted.checked, description: this.taskDescription.value, projectId: this.currentActiveProjectId, taskId: +this.taskName.dataset.taskid, date: this.taskDate.value });
+            PubSub.publish('Update_Task', { name: this.taskName.value, status: this.taskisCompleted.checked, description: this.taskDescription.value, projectId: this.currentActiveProjectId, taskId: +this.taskName.dataset.taskid, date: this.taskDate.value, view: this.view });
         }))
         this.priorityBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                PubSub.publish('Update_Task', { name: this.taskName.value, status: this.taskisCompleted.checked, description: this.taskDescription.value, projectId: this.currentActiveProjectId, taskId: +this.taskName.dataset.taskid, date: this.taskDate.value, taskPriority: btn.textContent })
+                PubSub.publish('Update_Task', { name: this.taskName.value, status: this.taskisCompleted.checked, description: this.taskDescription.value, projectId: this.currentActiveProjectId, taskId: +this.taskName.dataset.taskid, date: this.taskDate.value, taskPriority: btn.textContent, view: this.view })
                 this.priorityDivs.querySelector('.active').classList.remove('active');
                 btn.classList.add('active');
             })
+        })
+        this.projectOpt.addEventListener('input', () => {
+            this.projectChanged = true;
         })
     }
 
@@ -125,10 +152,13 @@ new class GUI {
     deleteProject(e) {
         const id = e.target.dataset.projectid;
         PubSub.publish('Delete_Project', { id });
+        this.currentActiveProjectId = 0;
     }
 
     openProject(e) {
         if (e.target === e.currentTarget) {
+            this.view = null;
+            this.viewsTab = false;
             const id = e.currentTarget.dataset.projectid;
             this.updateCurrentActiveProject(id);
             PubSub.publish('Open_Project', { id })
@@ -140,7 +170,7 @@ new class GUI {
     }
 
     addTask() {
-        PubSub.publish('Add_Task', { id: this.currentActiveProjectId });
+        PubSub.publish('Add_Task', { id: this.currentActiveProjectId, view: this.view });
     }
 
     showModal(task, projects) {
@@ -153,7 +183,8 @@ new class GUI {
             name="trash"
             class="task-del-btn"
           ></ion-icon>
-          <ion-icon class="close-modal-btn" name="close-circle-outline"></ion-icon>
+          <ion-icon class="close-modal-btn" data-projectID="${this.currentActiveProjectId}"
+          data-taskID="${task.id}" name="close-circle-outline"></ion-icon>
         </div>
         <div class="modal-body">
           <div class="modal-left">
@@ -233,7 +264,7 @@ new class GUI {
     deleteTask(e) {
         const projectId = +e.target.dataset.projectid;
         const taskId = +e.target.dataset.taskid;
-        PubSub.publish('Delete_Task', { projectId, taskId })
+        PubSub.publish('Delete_Task', { projectId, taskId, view: this.view })
     }
 
     renderProjects(projects) {
@@ -253,30 +284,34 @@ new class GUI {
         this.projectListContainer.insertAdjacentHTML('beforeend', `<li class="add-project-btn">Add +</li>`)
     }
 
-    renderTasks({ tasks, projectId, multi = false }) {
-        if (!multi) {
-            this.content.innerHTML = '';
+    renderTasks({ tasks, projectId = false }) {
+        if (!projectId) {
+            this.setDefaultView();
         }
-        tasks.forEach((task, id, _) => {
+        this.content.innerHTML = '';
+        tasks.forEach(task => {
             this.content.insertAdjacentHTML('beforeend', `          <div
             class="task"
-            data-task-id="${id}"
+            data-task-id="${task.id}"
           >
-            <input ${task.isComplete ? "checked" : ''} type="checkbox" name="is-completed" class="task__is-done" />
+            <input ${task.isComplete ? "checked" : ''} type="checkbox" data-projectid=${projectId || task.projectId} data-taskid=${task.id} name="is-completed" class="task-is-done" />
             <h3 class="task-title">${task.name}</h3>
-            <ion-icon data-taskid=${id} data-projectid=${projectId} name="expand-outline" class="task-expand-btn"></ion-icon>
+            <ion-icon data-taskid=${task.id} data-projectid=${projectId || task.projectId} name="expand-outline" class="task-expand-btn"></ion-icon>
             <h3 class="task-date">${task.dueDate}</h3>
           </div>`);
         })
-        if (!multi) {
-            this.appendAddTaskBtn();
-            this.cacheDynamicTaskDOM();
-            this.bindTaskEvent();
-        }
+        this.appendAddTaskBtn();
+        this.cacheDynamicTaskDOM();
+        this.bindTaskEvent();
     }
 
-    appendAddTaskBtn() {
-        this.content.insertAdjacentHTML('beforeend', `<div class="add-task-btn" data-projecid="${this.currentActiveProjectId}" >Add +</div>`)
+    setDefaultView() {
+        this.viewsTab = true;
+        this.currentActiveProjectId = 0;
+    }
+
+    appendAddTaskBtn(defaultProject = false) {
+        this.content.insertAdjacentHTML('beforeend', `<div class="add-task-btn" data-projecid="${defaultProject ? 0 : this.currentActiveProjectId}" >Add +</div>`)
     }
 
 }

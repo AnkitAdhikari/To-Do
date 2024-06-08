@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isThisWeek, isToday, toDate } from "date-fns";
 class List {
     constructor() {
         this.list = [];
@@ -105,32 +105,57 @@ new class Projects {
         PubSub.subscribe('Delete_Project', (msg, data) => {
             this.delete(+data.id);
             PubSub.publish('Render_Projects', this.projects);
+            PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(0).tasks, projectId: 0 })
         })
         PubSub.subscribe('Open_Project', (msg, data) => {
             PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.id).tasks, projectId: data.id });
         })
         PubSub.subscribe('Add_Task', (msg, data) => {
             this.addTask(data.id);
-            PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.id).tasks, projectId: data.id })
+            if (data.view) {
+                this.runViewTabHandler(data.view);
+            } else {
+                PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.id).tasks, projectId: data.id })
+            }
             PubSub.publish('Display_Modal', { task: this.getAllTasks(data.id).tasks.at(-1), projects: this.projects });
         })
         PubSub.subscribe('Delete_Task', (msg, data) => {
             this.deleteTask(data.projectId, data.taskId);
-            PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.projectId).tasks, projectId: data.projectId });
+            if (data.view) {
+                this.runViewTabHandler(data.view);
+            } else {
+                PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.id).tasks, projectId: data.id })
+            }
             PubSub.publish('Close_Modal', {});
         })
         PubSub.subscribe('Update_Task', (msg, data) => {
             this.updateTask(data.projectId, data.taskId, data.name, data.status, data.date, data.description, data.taskPriority);
-            PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.projectId).tasks, projectId: data.projectId })
+            if (data.view) {
+                this.runViewTabHandler(data.view);
+            }
+            else {
+                PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.projectId).tasks, projectId: data.projectId })
+            }
         })
         PubSub.subscribe('Open_Task', (msg, data) => {
             PubSub.publish('Display_Modal', { task: this.getAllTasks(data.projectId).tasks.at(data.taskId), projects: this.projects });
         })
-        PubSub.subscribe('Change_Task_Project', (msg, { newId, oldId, taskId }) => {
-            this.moveTask({ newId, oldId }, taskId);
+        PubSub.subscribe('Change_Task_Project', (msg, { newId, oldId, taskId, viewsTab }) => {
+            console.log(this.projects);
+            this.moveTask({ newId, oldId }, taskId, viewsTab);
+            console.log(this.projects);
         });
         PubSub.subscribe('All_Tasks', (msg, data) => {
             this.allTasks();
+        })
+        PubSub.subscribe('Today_Tasks', (msg, data) => {
+            this.todayTasks();
+        })
+        PubSub.subscribe('Week_Tasks', (msg, data) => {
+            this.weekTasks();
+        })
+        PubSub.subscribe("High_Alert_Tasks", (msg, data) => {
+            this.highAlertTasks();
         })
     }
     defaultName() {
@@ -175,11 +200,16 @@ new class Projects {
         return this.#getProject(projectid).getTasks(taskid).delete(taskid);
     }
 
-    moveTask(projectid, taskid) {
+    moveTask(projectid, taskid, viewsTab) {
         const task = this.deleteTask(projectid.oldId, taskid);
-        const project = this.projects[projectid.newId]
+        const project = this.projects[projectid.newId];
+        task.id = project.todo.tasks.length;
         project.todo.tasks.push(task);
-        PubSub.publish('Open_Project', { id: projectid.oldId });
+        if (viewsTab) {
+
+        } else {
+            PubSub.publish('Open_Project', { id: projectid.oldId });
+        }
     }
 
     addList(projectid, taskid, name) {
@@ -193,9 +223,67 @@ new class Projects {
     }
 
     allTasks() {
-        this.projects.forEach((project, i, _) => {
-            PubSub.publish("Render_All_Tasks", { tasks: project.todo.tasks, projectId: i });
+        let tasks = [];
+        let projects = this.projects.slice(0);
+        projects.forEach((project, i, _) => {
+            project.todo.tasks.forEach(task => {
+                task.projectId = i
+            })
+            tasks.push(project.todo.tasks);
+            console.log(tasks)
         })
-        PubSub.publish("All_Tasks_Rendered", {});
+        console.log(tasks);
+        tasks = tasks.flat();
+        PubSub.publish("Render_Tasks", { tasks });
+    }
+    todayTasks() {
+        let tasks = [];
+        let projects = this.projects.slice(0);
+        projects.forEach((project, i, _) => {
+            tasks.push(project.todo.tasks.filter(task => {
+                task.projectId = i;
+                return isToday(task.dueDate)
+            }));
+        })
+        tasks = tasks.flat();
+        PubSub.publish("Render_Tasks", { tasks });
+    }
+    weekTasks() {
+        let tasks = [];
+        let projects = this.projects.slice(0);
+        projects.forEach((project, i, _) => {
+            tasks.push(project.todo.tasks.filter(task => {
+                task.projectId = i;
+                return isThisWeek(task.dueDate)
+            }));
+        })
+        tasks = tasks.flat();
+        PubSub.publish("Render_Tasks", { tasks });
+    }
+    highAlertTasks() {
+        let tasks = [];
+        let projects = this.projects.slice(0);
+        projects.forEach((project, i, _) => {
+            tasks.push(project.todo.tasks.filter(task => {
+                task.projectId = i;
+                return task.priority > 3;
+            }));
+        })
+        tasks = tasks.flat();
+        PubSub.publish("Render_Tasks", { tasks });
+    }
+
+    runViewTabHandler(view) {
+        if (view === 'allTasks')
+            PubSub.publish('All_Tasks', {});
+
+        if (view === 'todayTasks')
+            PubSub.publish('Today_Tasks', {});
+
+        if (view === 'weekTasks')
+            PubSub.publish('Week_Tasks', {});
+
+        if (view === 'highAlertTasks')
+            PubSub.publish('High_Alert_Tasks', {});
     }
 }
