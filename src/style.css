@@ -153,7 +153,8 @@ body {
   background-color: rgb(187, 187, 187);
 }
 
-.add-task-btn {
+.add-task-btn,
+.add-list-btn {
   padding: 0.5rem;
   padding-left: 2rem;
   margin-top: 1rem;
@@ -164,7 +165,8 @@ body {
   border-radius: 5px;
 }
 
-.add-task-btn:hover {
+.add-task-btn:hover,
+.add-list-btn:hover {
   background-color: #e4e4e4;
 }
 

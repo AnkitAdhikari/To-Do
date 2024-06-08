@@ -6,9 +6,9 @@ class List {
     add(newItem) {
         this.list.push({ listName: newItem, isComplete: false });
     }
-    update(id, name, isComplete = null) {
+    update(id, name, isComplete) {
         this.list[id].listName = name || this.list[id].listName;
-        this.list[id].isComplete = isComplete ?? this.list[id].isComplete;
+        this.list[id].isComplete = isComplete;
     }
     delete(id) {
         if (id >= 0 && id < this.list.length)
@@ -157,6 +157,27 @@ new class Projects {
         PubSub.subscribe("High_Alert_Tasks", (msg, data) => {
             this.highAlertTasks();
         })
+        PubSub.subscribe('Add_List', (msg, data) => {
+
+            this.addList(data.projectId, data.taskId, '');
+            let lists = this.getList(data.projectId, data.taskId);
+            let task = this.getAllTasks(data.projectId).tasks[`${data.taskId}`];
+            PubSub.publish("Render_List", { lists, task, newAdded: true })
+        })
+        PubSub.subscribe('Update_List', (msg, data) => {
+            this.updateList(data.projectId, data.taskId, data.listId, data.newName, data.newStatus);
+            let lists = this.getList(data.projectId, data.taskId);
+            let task = this.getAllTasks(data.projectId).tasks[`${data.taskId}`];
+            if (!data.noRender) {
+                PubSub.publish('Render_List', { lists, task })
+            }
+        })
+        PubSub.subscribe('Delete_List', (msg, data) => {
+            this.deleteList(data.projectId, data.taskId, data.listId);
+            let lists = this.getList(data.projectId, data.taskId);
+            let task = this.getAllTasks(data.projectId).tasks[`${data.taskId}`];
+            PubSub.publish('Render_List', { lists, task });
+        })
     }
     defaultName() {
         let digit = this.projects.length;
@@ -220,6 +241,9 @@ new class Projects {
     }
     deleteList(projectid, taskid, listid) {
         this.#getProject(projectid).getTask(taskid).checkList.delete(listid);
+    }
+    getList(projectid, taskid) {
+        return this.#getProject(projectid).getTask(taskid).checkList.list
     }
 
     allTasks() {

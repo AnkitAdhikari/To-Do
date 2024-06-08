@@ -23,11 +23,18 @@ new class GUI {
         PubSub.subscribe('Display_Modal', (msg, data) => {
             this.projects = data.projects;
             this.showModal(data.task, data.projects);
+            let lists = data.task.checkList.list;
+            this.renderLists(lists, data.task);
         })
         PubSub.subscribe('Close_Modal', (msg, data) => this.modal.close());
         PubSub.subscribe("Render_All_Tasks", (msg, { tasks, projectId }) => {
             this.renderTasks({ tasks, projectId, multi: true });
         })
+        PubSub.subscribe("Render_List", (msg, { lists, task, newAdded }) => {
+            this.renderLists(lists, task)
+            if (newAdded)
+                this.newlyAdded.focus();
+        });
     }
 
     cacheStaticDOM() {
@@ -62,6 +69,15 @@ new class GUI {
         this.priorityBtns = document.querySelectorAll('.task-priority');
         this.priorityDivs = document.querySelector('.priorityDivs');
         this.projectOpt = document.querySelector('.project-opt')
+        this.lists = document.querySelector(".lists");
+    }
+
+    cacheDynamicListDOM() {
+        this.addListBtn = document.querySelector('.add-list-btn');
+        this.listisCompleted = document.querySelectorAll('.list-isCompleted');
+        this.listNames = document.querySelectorAll('.list-name');
+        this.listDelBtns = document.querySelectorAll('.list-del-btn');
+        this.newlyAdded = this.listNames[this.listNames.length - 1]
     }
 
     bindStaticEvent() {
@@ -139,6 +155,37 @@ new class GUI {
         })
     }
 
+    bindListEvent() {
+        this.addListBtn.addEventListener('click', this.addList.bind(this));
+
+        this.listisCompleted.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const projectId = e.currentTarget.dataset.projectid;
+                const taskId = e.currentTarget.dataset.taskid;
+                const listId = e.currentTarget.dataset.listid;
+                PubSub.publish('Update_List', { projectId, taskId, listId, newStatus: btn.checked });
+            })
+        })
+
+        this.listDelBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const projectId = e.currentTarget.dataset.projectid;
+                const taskId = e.currentTarget.dataset.taskid;
+                const listId = e.currentTarget.dataset.listid;
+                PubSub.publish('Delete_List', { projectId, taskId, listId });
+            })
+        })
+
+        this.listNames.forEach(name => {
+            name.addEventListener('input', (e) => {
+                const projectId = e.currentTarget.dataset.projectid;
+                const taskId = e.currentTarget.dataset.taskid;
+                const listId = e.currentTarget.dataset.listid;
+                PubSub.publish('Update_List', { projectId, taskId, listId, newName: name.value, noRender: true });
+            })
+        })
+    }
+
     addProject() {
         PubSub.publish('Add_Project', {});
     }
@@ -171,6 +218,10 @@ new class GUI {
 
     addTask() {
         PubSub.publish('Add_Task', { id: this.currentActiveProjectId, view: this.view });
+    }
+
+    addList() {
+        PubSub.publish('Add_List', { projectId: this.currentActiveProjectId, view: this.view, taskId: this.currentActiveTask });
     }
 
     showModal(task, projects) {
@@ -312,6 +363,23 @@ new class GUI {
 
     appendAddTaskBtn(defaultProject = false) {
         this.content.insertAdjacentHTML('beforeend', `<div class="add-task-btn" data-projecid="${defaultProject ? 0 : this.currentActiveProjectId}" >Add +</div>`)
+    }
+
+    renderLists(lists, task) {
+        this.lists.innerHTML = '';
+        lists.forEach((list, i, _) => {
+            this.lists.insertAdjacentHTML('beforeend', `<div><input ${list.isComplete ? "checked" : ''} class="list-isCompleted" data-listid=${i} data-projectid="${this.currentActiveProjectId}" data-taskid="${task.id}" type="checkbox" name="" id="">
+            <input data-listid=${i} data-projectid="${this.currentActiveProjectId}" data-taskid="${task.id}" class="list-name" type="text" value="${list.listName}" placeholder="list">
+            <ion-icon data-listid=${i} data-projectid="${this.currentActiveProjectId}" data-taskid="${task.id}" name="trash" class="list-del-btn md hydrated" role="img"></ion-icon>
+            </div>`)
+        })
+        this.appendAddListBtn(task);
+        this.cacheDynamicListDOM();
+        this.bindListEvent();
+    }
+
+    appendAddListBtn(task) {
+        this.lists.insertAdjacentHTML('beforeend', `<div class="add-list-btn" data-taskid="${task.id}" data-projecid="${this.currentActiveProjectId}" >Add +</div>`)
     }
 
 }
