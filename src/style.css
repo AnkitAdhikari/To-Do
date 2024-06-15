@@ -1,7 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+
 * {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+  --primary-color: #f6f5f2;
+  --secondary-color: #f0ebe3;
+  --highlight-color: #f3d0d7;
+  --neutral-color: #ffefef;
 }
 
 html {
@@ -21,7 +28,7 @@ body {
 
 .upper {
   position: relative;
-  height: 15rem;
+  height: 13rem;
   display: grid;
   grid-template-columns: 15fr 85fr;
 }
@@ -29,12 +36,18 @@ body {
 .lower {
   flex-grow: 1;
   display: grid;
-  grid-template-columns: 1fr 3fr;
+  grid-template-columns: 30rem auto;
+  transition: grid-template-columns 700ms ease;
+}
+
+.lower.close {
+  grid-template-columns: 0 1fr;
 }
 
 .brand-container,
 .nav-btn-container {
-  background-color: #373a40;
+  background-color: var(--secondary-color);
+  border-bottom: 1px solid var(--neutral-color);
 }
 
 .nav-btn-container {
@@ -56,23 +69,38 @@ body {
 }
 
 .nav-container {
-  background-color: #686d76;
+  background-color: var(--secondary-color);
+  cursor: default;
 }
 .content-container {
-  background-color: #eeeeee;
+  background-color: var(--primary-color);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .content {
   margin-top: 5rem;
-  /* background-color: red; */
   width: 80%;
   height: 50rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.content-heading {
+  width: 80%;
+  margin-top: 5rem;
+}
+
+.viewname {
+  font-size: 3.2rem;
+  font-weight: 600;
 }
 
 .menu-icon {
   font-size: 4rem;
+  cursor: pointer;
 }
 
 .static-nav-container,
@@ -82,7 +110,7 @@ body {
 
 .static-nav-container ul,
 .dynamic-nav-container ul {
-  margin-left: 3.5rem;
+  margin-left: 4.5rem;
   margin-right: 1rem;
   display: flex;
   flex-direction: column;
@@ -91,7 +119,7 @@ body {
 
 .nav-title {
   font-size: 3.2rem;
-  margin-left: 1.5rem;
+  margin-left: 2.5rem;
   margin-bottom: 1.5rem;
   text-decoration: underline;
 }
@@ -99,14 +127,39 @@ body {
 .nav-list {
   font-size: 2.4rem;
   display: flex;
-  align-content: center;
-  gap: 0.5rem;
-  padding: 1.5rem 0;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  border-radius: 8px;
 }
 
 .nav-list:hover {
   cursor: pointer;
-  background-color: #90949b;
+  background-color: var(--highlight-color);
+}
+
+.nav-list.active {
+  background-color: var(--highlight-color);
+  font-weight: 500;
+}
+
+#project-list-container {
+  height: 30rem;
+  overflow: scroll;
+  overflow-x: hidden;
+}
+
+.project-name {
+  background-color: inherit;
+  outline: none;
+  border: none;
+  font-size: inherit;
+  font-weight: inherit;
+  width: 15rem;
+}
+
+.project-name:focus {
+  outline: 1px solid var(--highlight-color);
 }
 
 .add-project-btn {
@@ -114,22 +167,27 @@ body {
   display: flex;
   justify-content: center;
   cursor: pointer;
+  padding: 0.5rem 0;
 }
 
 .add-project-btn:hover {
-  background-color: #90949b;
+  background-color: var(--highlight-color);
+  border-radius: 8px;
 }
 
 .task {
   display: grid;
   grid-template-columns: 3rem auto 3rem 10rem;
-  background-color: #90949b;
+  background-color: var(--secondary-color);
   align-items: center;
   padding: 1rem;
+  transition: all 200ms ease-out;
 }
 
 .task:hover {
   cursor: pointer;
+  transform: scale(1.003);
+  box-shadow: 3px 3px 5px 2px rgba(0, 0, 0, 0.2);
 }
 
 .task-title {
@@ -150,33 +208,34 @@ body {
 }
 
 .task-expand-btn:hover {
-  background-color: rgb(187, 187, 187);
+  background-color: var(--highlight-color);
 }
 
 .add-task-btn,
 .add-list-btn {
-  padding: 0.5rem;
+  padding: 0.8rem;
   padding-left: 2rem;
   margin-top: 1rem;
   font-size: 1.2rem;
-  font-weight: bold;
-  color: #777777;
+  font-weight: 700;
   cursor: pointer;
   border-radius: 5px;
 }
 
 .add-task-btn:hover,
 .add-list-btn:hover {
-  background-color: #e4e4e4;
+  background-color: var(--highlight-color);
 }
 
 .modal {
-  max-width: 75rem;
-  background-color: blue;
   display: grid;
+  height: 100%;
+  grid-template-rows: 1fr 7fr;
 }
 
 dialog {
+  width: 70rem;
+  height: 40rem;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -191,13 +250,25 @@ dialog {
 .modal-head {
   display: flex;
   justify-content: space-between;
-  padding: 0.7rem;
+  align-items: center;
+  padding: 0 2rem;
   font-size: 2rem;
-  background-color: #afccff;
+  background-color: var(--secondary-color);
+}
+
+.task-del-btn,
+.close-modal-btn {
+  font-size: 2.4rem;
+  transition: scale 200ms ease;
+}
+
+.task-del-btn:hover,
+.close-modal-btn:hover {
+  scale: 1.2;
 }
 
 .modal-left {
-  background-color: white;
+  background-color: var(--primary-color);
   padding: 2rem;
 }
 
@@ -205,7 +276,7 @@ dialog {
   margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .tasks-content div {
@@ -213,28 +284,181 @@ dialog {
   gap: 1rem;
 }
 
+.task-isCompleted {
+  width: 3rem;
+  height: 3rem;
+  outline: none;
+}
+
+.tasks-content input[type="text"],
+.tasks-content textarea {
+  border: none;
+  width: 80%;
+}
+.tasks-content input[type="text"]:focus,
+.tasks-content textarea:focus {
+  outline: 1px solid var(--highlight-color);
+}
+
+.task-description {
+  height: 10rem;
+  font-size: 1.6rem;
+}
+
+.task-name {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.modal-body .md {
+  font-size: 3.2rem;
+}
+
+.lists-content .heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.lists {
+  height: 10rem;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  padding-left: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lists div {
+  display: flex;
+  align-items: center;
+}
+
+.lists .list-del-btn {
+  font-size: 1.6rem;
+}
+
+.add-list-btn {
+  padding: 0.4rem;
+}
+
+.lists input[type="text"] {
+  border: none;
+  margin-left: 1rem;
+}
+
+.lists input[type="text"]:focus {
+  outline: 1px solid var(--highlight-color);
+}
+
+.lists-heading {
+  font-size: 1.6rem;
+}
+
 .modal-right {
-  background-color: rgb(180, 180, 180);
+  background-color: var(--primary-color);
   padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
+.modal-right p,
+.task-Due-date {
+  font-size: 2rem;
+  margin-bottom: 0.7rem;
+}
+
+.project-opt {
+  height: 3rem;
+  font-size: 1.6rem;
+}
+
 .priorityDivs {
   display: flex;
   gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .priorityDivs div {
   padding: 0.7rem 1rem;
-  background-color: gold;
+  border-radius: 4px;
+  transition: scale 200ms ease;
+  cursor: pointer;
 }
 
 .priorityDivs .active {
-  scale: 1.2;
+  scale: 1.4;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 .task-is-done:checked + .task-title {
   text-decoration: line-through;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.6rem;
+  padding: 0.5rem;
+}
+
+.github-logo {
+  font-size: 3rem;
+  margin-left: 1rem;
+  transition: transform 1s;
+}
+
+a {
+  color: inherit;
+}
+
+.github-logo:hover {
+  transform: rotate(1turn);
+}
+
+/* slider */
+/* For Webkit browsers (e.g., Chrome, Safari) */
+::-webkit-scrollbar {
+  width: 12px; /* Adjust the width if needed */
+  height: 12px; /* Adjust the height if needed */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-color);
+  border-radius: 10px; /* Adjust the radius if needed */
+  border: 3px solid transparent; /* Create padding around the thumb */
+  background-clip: padding-box; /* Ensures the thumb is visible within the padding */
+}
+
+/* Hide scrollbar buttons */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Hide scrollbar corner */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin; /* Options: auto, thin */
+  scrollbar-color: var(--neutral-color) transparent;
+}
+
+/* For Internet Explorer and Edge */
+* {
+  -ms-overflow-style: none; /* Hides default scrollbar */
+}
+
+*::-ms-scrollbar {
+  display: none; /* Hides default scrollbar */
 }

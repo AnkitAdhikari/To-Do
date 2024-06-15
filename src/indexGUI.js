@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import './style.css';
 
 import PubSub from 'pubsub-js'
@@ -5,12 +6,19 @@ import PubSub from 'pubsub-js'
 
 new class GUI {
     constructor() {
+        this.navContainer = document.querySelector('.nav-container');
+        this.highlightController();
+        this.projectAdded = false;
         this.currentActiveProjectId = 0;
         this.view = 'allTasks';
         this.currentActiveTask = null;
         this.viewsTab = true;
         this.projectChanged = false;
 
+        this.menuBtn = document.querySelector('.menu-icon');
+        this.viewName = document.querySelector('.viewname');
+        this.lowerGrid = document.querySelector('.lower');
+        this.bindcloseNav();
         this.modal = document.createElement('dialog');
         this.cacheStaticDOM();
         this.bindStaticEvent();
@@ -21,7 +29,7 @@ new class GUI {
             this.renderTasks(data);
         })
         PubSub.subscribe('Display_Modal', (msg, data) => {
-            this.projects = data.projects;
+            this.allProjects = data.projects;
             this.showModal(data.task, data.projects);
             let lists = data.task.checkList.list;
             this.renderLists(lists, data.task);
@@ -35,6 +43,12 @@ new class GUI {
             if (newAdded)
                 this.newlyAdded.focus();
         });
+    }
+
+    bindcloseNav() {
+        this.menuBtn.addEventListener('click', () => {
+            this.lowerGrid.classList.toggle('close');
+        })
     }
 
     cacheStaticDOM() {
@@ -85,21 +99,27 @@ new class GUI {
             this.content.innerHTML = '';
             this.view = 'allTasks';
             PubSub.publish('All_Tasks', {});
+            this.updateViewName('All Tasks');
         })
         this.todayTasks.addEventListener('click', () => {
             this.content.innerHTML = '';
             this.view = 'todayTasks';
             PubSub.publish('Today_Tasks', {});
+            this.updateViewName('Today');
+
         })
         this.weekTasks.addEventListener('click', () => {
             this.content.innerHTML = '';
             this.view = 'weekTasks';
             PubSub.publish('Week_Tasks', {});
+            this.updateViewName('This Week');
+
         })
         this.highAlertTasks.addEventListener('click', () => {
             this.content.innerHTML = '';
             this.view = 'highAlertTasks'
             PubSub.publish('High_Alert_Tasks', {});
+            this.updateViewName('High Alert');
         })
     }
 
@@ -188,6 +208,7 @@ new class GUI {
 
     addProject() {
         PubSub.publish('Add_Project', {});
+        this.projectAdded = true;
     }
 
     renameProject(e) {
@@ -206,6 +227,7 @@ new class GUI {
         if (e.target === e.currentTarget) {
             this.view = null;
             this.viewsTab = false;
+            this.updateViewName(e.target.querySelector('.project-name').value);
             const id = e.currentTarget.dataset.projectid;
             this.updateCurrentActiveProject(id);
             PubSub.publish('Open_Project', { id })
@@ -263,7 +285,7 @@ new class GUI {
             </div>
             <div class="lists-content">
               <div class="heading">
-                <ion-icon name="list-outline"></ion-icon> Checklist
+                <ion-icon name="list-outline"></ion-icon> <div class="lists-heading">Checklist</div>
               </div>
               <ul class="lists"></ul>
             </div>
@@ -330,6 +352,7 @@ new class GUI {
         this.appendAddProjectBtn();
         this.cacheDynamicProjectDOM();
         this.bindProjectEvent();
+        this.navList = document.querySelectorAll('.nav-list');
     }
     appendAddProjectBtn() {
         this.projectListContainer.insertAdjacentHTML('beforeend', `<li class="add-project-btn">Add +</li>`)
@@ -346,9 +369,9 @@ new class GUI {
             data-task-id="${task.id}"
           >
             <input ${task.isComplete ? "checked" : ''} type="checkbox" data-projectid=${projectId || task.projectId} data-taskid=${task.id} name="is-completed" class="task-is-done" />
-            <h3 class="task-title">${task.name}</h3>
+            <div class="task-title">${task.name}</div>
             <ion-icon data-taskid=${task.id} data-projectid=${projectId || task.projectId} name="expand-outline" class="task-expand-btn"></ion-icon>
-            <h3 class="task-date">${task.dueDate}</h3>
+            <div class="task-date">${format(task.dueDate, 'PP')}</div>
           </div>`);
         })
         this.appendAddTaskBtn();
@@ -380,6 +403,33 @@ new class GUI {
 
     appendAddListBtn(task) {
         this.lists.insertAdjacentHTML('beforeend', `<div class="add-list-btn" data-taskid="${task.id}" data-projecid="${this.currentActiveProjectId}" >Add +</div>`)
+    }
+
+    highlightController() {
+        this.navContainer.addEventListener('click', this.hightlightNav.bind(this))
+    }
+
+    hightlightNav(e) {
+        if (this.projectAdded) {
+            this.projectAdded = false;
+            return;
+        }
+        let hasList = false;
+        for (const list of this.navList) {
+            if (list === e.target)
+                hasList = true
+        }
+        if (!hasList)
+            return;
+        this.navList.forEach(el => {
+            el.classList.remove('active');
+        })
+        if (e.target.classList.contains('nav-list'))
+            e.target.classList.add('active');
+    }
+
+    updateViewName(name) {
+        this.viewName.textContent = name;
     }
 
 }

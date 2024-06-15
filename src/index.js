@@ -1,4 +1,4 @@
-import { format, isThisWeek, isToday, toDate } from "date-fns";
+import { format, isThisWeek, isToday } from "date-fns";
 class List {
     constructor() {
         this.list = [];
@@ -94,7 +94,9 @@ class Project {
 new class Projects {
     projects = [new Project("Default")];
     constructor() {
+        this.localStorageinit();
         PubSub.publish('Render_Projects', this.projects);
+        this.allTasks();
         PubSub.subscribe('Add_Project', (msg, data) => {
             this.add();
             PubSub.publish('Render_Projects', this.projects);
@@ -124,7 +126,7 @@ new class Projects {
             if (data.view) {
                 this.runViewTabHandler(data.view);
             } else {
-                PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.id).tasks, projectId: data.id })
+                PubSub.publish('Render_Tasks', { tasks: this.getAllTasks(data.projectId).tasks, projectId: data.id })
             }
             PubSub.publish('Close_Modal', {});
         })
@@ -141,9 +143,7 @@ new class Projects {
             PubSub.publish('Display_Modal', { task: this.getAllTasks(data.projectId).tasks.at(data.taskId), projects: this.projects });
         })
         PubSub.subscribe('Change_Task_Project', (msg, { newId, oldId, taskId, viewsTab }) => {
-            console.log(this.projects);
             this.moveTask({ newId, oldId }, taskId, viewsTab);
-            console.log(this.projects);
         });
         PubSub.subscribe('All_Tasks', (msg, data) => {
             this.allTasks();
@@ -179,6 +179,20 @@ new class Projects {
             PubSub.publish('Render_List', { lists, task });
         })
     }
+    localStorageinit() {
+        if (JSON.parse(localStorage.getItem("projects"))) {
+            const result = JSON.parse(localStorage.getItem("projects"));
+            result.forEach(project => {
+                Object.setPrototypeOf(project, Project.prototype);
+                Object.setPrototypeOf(project.todo, Tasks.prototype);
+                project.todo.tasks.forEach(task => {
+                    Object.setPrototypeOf(task, Task.prototype);
+                    Object.setPrototypeOf(task.checkList, List.prototype);
+                })
+            })
+            this.projects = result;
+        }
+    }
     defaultName() {
         let digit = this.projects.length;
         return `new project${digit === 0 ? "" : ''}`;
@@ -189,13 +203,16 @@ new class Projects {
     }
     add(name = this.defaultName()) {
         this.projects.push(new Project(name, this.projects.length));
+        this.updateLocalStorage();
     }
     renameProject(id, newName) {
         this.#getProject(id).rename(newName);
+        this.updateLocalStorage();
     }
     delete(id) {
         if (id > 0 && id < this.projects.length) {
             this.projects.splice(id, 1);
+            this.updateLocalStorage();
         }
     }
 
@@ -211,14 +228,18 @@ new class Projects {
             } else {
                 this.projects[id].todo.add(name, date, priority, note);
             }
+            this.updateLocalStorage();
         }
     }
     updateTask(projectid, taskid, newName, newStatus, newDate, newNote, newPriority) {
         let task = this.#getProject(projectid).getTask(taskid);
         task.update(newName, newStatus, newDate, newNote, newPriority)
+        this.updateLocalStorage();
     }
     deleteTask(projectid, taskid) {
-        return this.#getProject(projectid).getTasks(taskid).delete(taskid);
+        const deleted = this.#getProject(projectid).getTasks(taskid).delete(taskid);
+        this.updateLocalStorage();
+        return deleted;
     }
 
     moveTask(projectid, taskid, viewsTab) {
@@ -226,6 +247,7 @@ new class Projects {
         const project = this.projects[projectid.newId];
         task.id = project.todo.tasks.length;
         project.todo.tasks.push(task);
+        this.updateLocalStorage();
         if (viewsTab) {
 
         } else {
@@ -235,15 +257,19 @@ new class Projects {
 
     addList(projectid, taskid, name) {
         this.#getProject(projectid).getTask(taskid).checkList.add(name);
+        this.updateLocalStorage();
     }
     updateList(projectid, taskid, listid, name, isComplete) {
         this.#getProject(projectid).getTask(taskid).checkList.update(listid, name, isComplete)
+        this.updateLocalStorage();
     }
     deleteList(projectid, taskid, listid) {
         this.#getProject(projectid).getTask(taskid).checkList.delete(listid);
+        this.updateLocalStorage();
     }
     getList(projectid, taskid) {
-        return this.#getProject(projectid).getTask(taskid).checkList.list
+        const list = this.#getProject(projectid).getTask(taskid).checkList.list
+        return list;
     }
 
     allTasks() {
@@ -254,9 +280,7 @@ new class Projects {
                 task.projectId = i
             })
             tasks.push(project.todo.tasks);
-            console.log(tasks)
         })
-        console.log(tasks);
         tasks = tasks.flat();
         PubSub.publish("Render_Tasks", { tasks });
     }
@@ -309,5 +333,8 @@ new class Projects {
 
         if (view === 'highAlertTasks')
             PubSub.publish('High_Alert_Tasks', {});
+    }
+    updateLocalStorage() {
+        localStorage.setItem("projects", JSON.stringify(this.projects));
     }
 }
